@@ -44,8 +44,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       eventTitle: widget.event.title,
       deviceId: deviceId,
       onSuccess: (resp) async {
-        // Mark user as subscribed in Supabase
-        await SupabaseService.instance.setSubscribed(deviceId, value: true);
+        // Mark specific event as subscribed
+        await SupabaseService.instance.setEventSubscribed(deviceId, widget.event.id);
         if (mounted) setState(() => _state = _PaymentState.success);
       },
       onFailure: (resp) {
@@ -215,9 +215,9 @@ class _IdleView extends StatelessWidget {
   }
 
   static const _benefits = [
-    (Icons.photo_library_rounded, 'Unlock ALL photos in ALL events'),
+    (Icons.photo_library_rounded, 'Unlock ALL photos in this event'),
     (Icons.no_adult_content_rounded, 'No ads – watch and download instantly'),
-    (Icons.devices_rounded, 'One-time subscription per device'),
+    (Icons.devices_rounded, 'One-time unlock for this event'),
     (Icons.security_rounded, 'Secure payment via Razorpay'),
   ];
 }

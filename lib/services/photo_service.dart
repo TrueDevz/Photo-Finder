@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../core/config.dart';
 import '../models/photo_model.dart';
 import '../utils/device_helper.dart';
@@ -42,6 +43,7 @@ class PhotoService {
   /// Unlock flow for a single photo.
   /// Returns the signed full-resolution URL on success.
   Future<UnlockResult> unlockPhoto(
+    BuildContext context,
     PhotoModel photo, {
     required bool hasEventSubscription,
   }) async {
@@ -62,8 +64,8 @@ class PhotoService {
       );
     }
 
-    // ── Show interstitial ad ───────────────────────────────────────────────
-    final adShown = await _ads.showInterstitial();
+    // ── Show video ad ───────────────────────────────────────────────
+    final adShown = await _ads.showVideoAd(context);
     if (!adShown) {
       return const UnlockResult(success: false, adFailed: true);
     }

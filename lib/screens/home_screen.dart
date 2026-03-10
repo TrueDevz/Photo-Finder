@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../core/constants.dart';
 import '../models/event_model.dart';
 import '../services/supabase_service.dart';
 import '../widgets/event_card.dart';
 import '../widgets/loading_indicator.dart';
+import '../widgets/app_banner_ad.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: _canExit,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
         final now = DateTime.now();
@@ -53,13 +55,12 @@ class _HomeScreenState extends State<HomeScreen> {
           return;
         }
 
-        setState(() => _canExit = true);
-        // On modern Flutter, we need to manually trigger pop if we set canPop to true late
-        // But in most cases, calling Navigator.pop or similar is better, or just set true and wait for next event.
-        // A common trick is to use SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+        // Second tap within 2 seconds
+        await SystemNavigator.pop();
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
+        bottomNavigationBar: const AppBannerAd(),
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

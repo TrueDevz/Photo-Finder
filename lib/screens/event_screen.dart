@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import '../core/constants.dart';
 import '../models/event_model.dart';
-import '../widgets/loading_indicator.dart';
+import '../widgets/app_banner_ad.dart';
 
 /// Displays event details and leads user into the photo gallery.
 class EventScreen extends StatelessWidget {
@@ -15,6 +15,7 @@ class EventScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      bottomNavigationBar: AppBannerAd(eventId: event.id),
       body: CustomScrollView(
         slivers: [
           // ── Hero app bar ─────────────────────────────────────────────────
@@ -237,7 +238,7 @@ class _InfoCard extends StatelessWidget {
           _InfoRow(
             icon: Icons.lock_open_rounded,
             text:
-                'Purchase event access for ₹500 to skip all ads and view unlimited photos.',
+                'Purchase event access for ₹100 to skip all ads and view unlimited photos.',
           ),
           const SizedBox(height: 8),
           _InfoRow(

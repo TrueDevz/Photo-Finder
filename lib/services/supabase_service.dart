@@ -140,6 +140,31 @@ class SupabaseService {
     return user?['is_subscribed'] as bool? ?? false;
   }
 
+  /// Returns whether [deviceId] is subscribed to a specific [eventId].
+  Future<bool> isEventSubscribed(String deviceId, String eventId) async {
+    // 1. Check global subscription first
+    if (await isSubscribed(deviceId)) return true;
+
+    // 2. Check event-specific sub
+    final response = await client
+        .from('event_subscriptions')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('device_id', deviceId)
+        .maybeSingle();
+
+    return response != null;
+  }
+
+  /// Marks a specific event as subscribed for [deviceId].
+  Future<void> setEventSubscribed(String deviceId, String eventId) async {
+    await client.from('event_subscriptions').upsert({
+      'event_id': eventId,
+      'device_id': deviceId,
+      'created_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'event_id,device_id');
+  }
+
   // ─── Signed URLs ───────────────────────────────────────────────────────────
 
   /// Generates a signed URL for a photo stored in Supabase Storage.

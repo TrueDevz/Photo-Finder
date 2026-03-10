@@ -8,6 +8,7 @@ import '../services/supabase_service.dart';
 import '../utils/device_helper.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/photo_grid_item.dart';
+import '../widgets/app_banner_ad.dart';
 
 class GalleryScreen extends StatefulWidget {
   final EventModel event;
@@ -42,7 +43,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   Future<void> _init() async {
     final deviceId = await DeviceHelper.getDeviceId();
-    _isSubscribed = await SupabaseService.instance.isSubscribed(deviceId);
+    _isSubscribed = await SupabaseService.instance.isEventSubscribed(deviceId, widget.event.id);
     await _loadNextPage();
   }
 
@@ -85,6 +86,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      bottomNavigationBar: AppBannerAd(eventId: widget.event.id),
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,

@@ -60,18 +60,19 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen>
   Future<void> _loadFullImage() async {
     setState(() => _state = _ViewState.loading);
 
-    // Get signed URL for the full image
-    final url = await PhotoService.instance.getSignedUrl(
-      widget.photo.imageUrl,
-      widget.event.id,
+    // 0. Use unlockPhoto to handle ads and view tracking
+    final result = await PhotoService.instance.unlockPhoto(
+      context,
+      widget.photo,
+      hasEventSubscription: widget.isSubscribed,
     );
 
     if (!mounted) return;
 
-    if (url != null) {
+    if (result.success) {
       setState(() {
         _state = _ViewState.success;
-        _signedUrl = url;
+        _signedUrl = result.signedUrl;
       });
       _fadeCtrl.forward();
     } else {
@@ -144,9 +145,9 @@ class _SuccessViewState extends State<_SuccessView> {
     setState(() => _isSaving = true);
 
     try {
-      // 0. Show Ad for non-subscribers
+      // 0. Show Video Ad for non-subscribers
       if (!widget.isSubscribed) {
-        final adShown = await AdsService.instance.showInterstitial();
+        final adShown = await AdsService.instance.showVideoAd(context);
         if (!adShown) {
           // Handle ad failure if necessary, or just proceed
         }

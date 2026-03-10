@@ -1,13 +1,9 @@
+import 'package:flutter/material.dart';
 import 'dart:async';
 
 import '../core/config.dart';
 
 /// Placeholder for Start.io interstitial ad integration.
-///
-/// Integration steps (when Start.io SDK is ready):
-/// 1. Download the Start.io Android AAR from https://www.start.io/
-/// 2. Add it to android/app/libs/ and update android/app/build.gradle
-/// 3. Uncomment and adapt the SDK calls marked with "SDK:" below.
 class AdsService {
   AdsService._();
   static AdsService? _instance;
@@ -23,8 +19,6 @@ class AdsService {
   // ─── Initialization ────────────────────────────────────────────────────────
 
   Future<void> initialize() async {
-    // SDK: StartAppSdk().setTestAdsEnabled(testMode);
-    // SDK: StartAppSdk().init(AppConfig.startIoAppId);
     _isInitialized = true;
     await _loadInterstitial();
   }
@@ -33,47 +27,164 @@ class AdsService {
 
   Future<void> _loadInterstitial() async {
     if (!_isInitialized) return;
-    // SDK: StartAppInterstitial().load(() => _isAdReady = true, (err) {});
     await Future.delayed(const Duration(milliseconds: 300));
     _isAdReady = true;
   }
 
-  /// Shows an interstitial ad and resolves [true] when dismissed.
-  /// Falls back to a 2-second simulated delay until Start.io SDK is wired up.
-  Future<bool> showInterstitial() async {
-    if (!_isAdReady) {
-      await Future.delayed(const Duration(seconds: 1));
-    }
+  /// Shows a simulated interstitial ad.
+  Future<bool> showInterstitial(BuildContext context) async {
+    if (!_isInitialized) await initialize();
+    if (!context.mounted) return true;
 
-    // ── SDK integration (uncomment when Start.io AAR is integrated) ──────────
-    /*
-    final completer = Completer<bool>();
-    StartAppInterstitial().show(
-      onAdDisplayed: () {},
-      onAdClicked: () {},
-      onAdHidden: () {
-        _isAdReady = false;
-        _loadInterstitial();
-        completer.complete(true);
-      },
-      onFailedToShowAd: (_) => completer.complete(false),
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const _SimulatedAdDialog(type: 'Interstitial'),
     );
-    return completer.future;
-    */
-    // ─────────────────────────────────────────────────────────────────────────
 
-    // Placeholder: simulate ad playback duration
-    await Future.delayed(const Duration(seconds: 2));
     _isAdReady = false;
     await _loadInterstitial();
-    return true;
+    return result ?? true;
+  }
+
+  /// Shows a simulated video (rewarded) ad.
+  Future<bool> showVideoAd(BuildContext context) async {
+    if (!_isInitialized) await initialize();
+    if (!context.mounted) return true;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const _SimulatedAdDialog(type: 'Video/Rewarded', duration: 5),
+    );
+
+    return result ?? true;
+  }
+
+  /// Returns a simulated Banner Ad widget.
+  Widget buildBannerAd() {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Stack(
+        children: [
+          const Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.ad_units_rounded, color: Colors.blueAccent, size: 20),
+                SizedBox(width: 8),
+                Text('Simulated Banner Ad', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+          ),
+          Positioned(
+            top: 2,
+            right: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text('AD', style: TextStyle(color: Colors.white, fontSize: 8)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   bool get isReady => _isAdReady;
   bool get isInitialized => _isInitialized;
 
-  /// Switch to false in production.
   static const bool testMode = true;
-
   static String get appId => AppConfig.startIoAppId;
+}
+
+class _SimulatedAdDialog extends StatefulWidget {
+  final String type;
+  final int duration;
+
+  const _SimulatedAdDialog({required this.type, this.duration = 3});
+
+  @override
+  State<_SimulatedAdDialog> createState() => _SimulatedAdDialogState();
+}
+
+class _SimulatedAdDialogState extends State<_SimulatedAdDialog> {
+  late int _secondsRemaining;
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _secondsRemaining = widget.duration;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() => _secondsRemaining--);
+      } else {
+        _timer.cancel();
+        if (mounted) Navigator.of(context).pop(true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+      },
+      child: Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.type == 'Video/Rewarded' 
+                        ? Icons.stars_rounded 
+                        : Icons.play_circle_fill_rounded, 
+                    size: 80, 
+                    color: Colors.blueAccent
+                  ),
+                  const SizedBox(height: 24),
+                  Text('${widget.type} Ad Playing...', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('Reward in $_secondsRemaining seconds', style: const TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 40),
+                  const CircularProgressIndicator(color: Colors.blueAccent),
+                ],
+              ),
+            ),
+            if (_secondsRemaining == 0)
+              Positioned(
+                top: 40,
+                right: 20,
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 30),
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
