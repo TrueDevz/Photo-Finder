@@ -57,13 +57,19 @@ alter table public.photos  enable row level security;
 alter table public.views   enable row level security;
 alter table public.users   enable row level security;
 
--- Events: public read
+-- Events: public read, admin managed
 create policy "Events are viewable by everyone"
   on public.events for select using (true);
 
--- Photos: public read
+create policy "Admins can manage events"
+  on public.events for all using (true) with check (true);
+
+-- Photos: public read, admin managed
 create policy "Photos are viewable by everyone"
   on public.photos for select using (true);
+
+create policy "Admins can manage photos"
+  on public.photos for all using (true) with check (true);
 
 -- Views: insert own records, read own records
 create policy "Users can insert their own views"

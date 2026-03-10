@@ -1,3 +1,5 @@
+import '../core/config.dart';
+
 class EventModel {
   final String id;
   final String title;
@@ -16,11 +18,16 @@ class EventModel {
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
+    String coverImage = json['cover_image'] as String? ?? '';
+    if (coverImage.isNotEmpty && !coverImage.startsWith('http')) {
+      coverImage = '${AppConfig.cdnBaseUrl}/$coverImage';
+    }
+
     return EventModel(
       id: json['id'] as String,
       title: json['title'] as String,
       eventDate: DateTime.parse(json['event_date'] as String),
-      coverImage: json['cover_image'] as String? ?? '',
+      coverImage: coverImage,
       price: json['price'] as int? ?? 500,
       createdAt: DateTime.parse(json['created_at'] as String),
     );

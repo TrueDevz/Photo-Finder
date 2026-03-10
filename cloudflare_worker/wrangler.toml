@@ -1,0 +1,13 @@
+name = "photo-finder-upload"
+main = "index.js"
+compatibility_date = "2024-03-10"
+
+# R2 Bucket Binding
+[[r2_buckets]]
+binding = "MY_BUCKET"
+bucket_name = "photo-finder"
+
+[vars]
+# Add your Supabase URL and Service Key in the Cloudflare Dashboard or via 'wrangler secret put'
+# SUPABASE_URL = "https://your-project.supabase.co"
+# SUPABASE_KEY = "your-service-key"

@@ -122,43 +122,55 @@ class _GalleryScreenState extends State<GalleryScreen> {
           ? const GalleryShimmer()
           : _photos.isEmpty
               ? const _EmptyGallery()
-              : GridView.builder(
-                  controller: _scroll,
-                  padding: const EdgeInsets.all(AppDimensions.paddingS),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 6,
-                    crossAxisSpacing: 6,
-                  ),
-                  itemCount: _photos.length + (_hasMore ? 1 : 0),
-                  itemBuilder: (ctx, idx) {
-                    if (idx == _photos.length) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      );
-                    }
-                    final photo = _photos[idx];
-                    return PhotoGridItem(
-                      photo: photo,
-                      onTap: () {
-                        context.push(
-                          AppRoutes.photoViewer,
-                          extra: {
-                            'photo': photo,
-                            'event': widget.event,
-                            'isSubscribed': _isSubscribed,
-                          },
-                        );
-                      },
-                    );
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {
+                      _photos.clear();
+                      _page = 0;
+                      _hasMore = true;
+                    });
+                    await _init();
                   },
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.surface,
+                  child: GridView.builder(
+                    controller: _scroll,
+                    padding: const EdgeInsets.all(AppDimensions.paddingS),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 6,
+                      crossAxisSpacing: 6,
+                    ),
+                    itemCount: _photos.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (ctx, idx) {
+                      if (idx == _photos.length) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      }
+                      final photo = _photos[idx];
+                      return PhotoGridItem(
+                        photo: photo,
+                        onTap: () {
+                          context.push(
+                            AppRoutes.photoViewer,
+                            extra: {
+                              'photo': photo,
+                              'event': widget.event,
+                              'isSubscribed': _isSubscribed,
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
     );
   }

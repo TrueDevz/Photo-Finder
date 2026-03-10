@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.photofinder.photo_finder">
 
     <!-- ── Permissions ─────────────────────────────────────────────────── -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -12,7 +13,6 @@
 
     <application
         android:label="Event Photo Finder"
-        android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
 
@@ -36,11 +36,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Razorpay -->
-        <activity
-            android:name="com.razorpay.CheckoutActivity"
-            android:exported="true"
-            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
 
         <meta-data
             android:name="flutterEmbedding"

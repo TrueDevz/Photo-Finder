@@ -215,9 +215,9 @@ class _IdleView extends StatelessWidget {
   }
 
   static const _benefits = [
-    (Icons.photo_library_rounded, 'Unlimited photo views for this event'),
-    (Icons.no_adult_content_rounded, 'No ads – watch photos instantly'),
-    (Icons.devices_rounded, 'One-time purchase per device'),
+    (Icons.photo_library_rounded, 'Unlock ALL photos in ALL events'),
+    (Icons.no_adult_content_rounded, 'No ads – watch and download instantly'),
+    (Icons.devices_rounded, 'One-time subscription per device'),
     (Icons.security_rounded, 'Secure payment via Razorpay'),
   ];
 }

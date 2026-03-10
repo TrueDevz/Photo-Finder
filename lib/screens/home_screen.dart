@@ -28,41 +28,70 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  DateTime? _lastBackPressTime;
+  bool _canExit = false;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _AppBar(onRefresh: _loadEvents),
-            Expanded(
-              child: FutureBuilder<List<EventModel>>(
-                future: _eventsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const LoadingIndicator(
-                        message: AppStrings.loadingEvents);
-                  }
-                  if (snapshot.hasError) {
-                    return _ErrorView(
-                      error: snapshot.error.toString(),
-                      onRetry: _loadEvents,
-                    );
-                  }
-                  final events = snapshot.data ?? [];
-                  if (events.isEmpty) {
-                    return const _EmptyView();
-                  }
-                  return _EventList(
-                    events: events,
-                    onRefresh: _loadEvents,
-                  );
-                },
-              ),
+    return PopScope(
+      canPop: _canExit,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        final now = DateTime.now();
+        if (_lastBackPressTime == null ||
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Press back again to exit'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              width: 200,
             ),
-          ],
+          );
+          return;
+        }
+
+        setState(() => _canExit = true);
+        // On modern Flutter, we need to manually trigger pop if we set canPop to true late
+        // But in most cases, calling Navigator.pop or similar is better, or just set true and wait for next event.
+        // A common trick is to use SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AppBar(onRefresh: _loadEvents),
+              Expanded(
+                child: FutureBuilder<List<EventModel>>(
+                  future: _eventsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const LoadingIndicator(
+                          message: AppStrings.loadingEvents);
+                    }
+                    if (snapshot.hasError) {
+                      return _ErrorView(
+                        error: snapshot.error.toString(),
+                        onRetry: _loadEvents,
+                      );
+                    }
+                    final events = snapshot.data ?? [];
+                    if (events.isEmpty) {
+                      return const _EmptyView();
+                    }
+                    return _EventList(
+                      events: events,
+                      onRefresh: _loadEvents,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

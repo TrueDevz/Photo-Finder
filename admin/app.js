@@ -4,9 +4,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CONFIG = {
-  supabaseUrl:      'https://YOUR_PROJECT.supabase.co',
-  supabaseAnonKey:  'YOUR_SUPABASE_ANON_KEY',
-  r2UploadEndpoint: 'https://YOUR_WORKER.workers.dev/upload', // Cloudflare Worker URL
+  supabaseUrl: 'https://whlunyumdvqphtgkkvvw.supabase.co',
+  supabaseAnonKey: 'sb_publishable_zaMqWw_LQ1wTwkiqWMNX_Q_f2VqWf0_',
+  r2UploadEndpoint: 'https://photo-finder-upload.devmahi-me.workers.dev', // Cloudflare Worker URL
 };
 
 // ─── Supabase REST helper ───────────────────────────────────────────────────
@@ -52,11 +52,11 @@ let eventsCache = [];
 
 async function loadEvents() {
   const loading = document.getElementById('events-loading');
-  const table   = document.getElementById('events-table');
-  const tbody   = document.getElementById('events-body');
+  const table = document.getElementById('events-table');
+  const tbody = document.getElementById('events-body');
 
   loading.style.display = 'block';
-  table.style.display   = 'none';
+  table.style.display = 'none';
 
   try {
     eventsCache = await sbFetch('/events?order=event_date.desc');
@@ -68,7 +68,7 @@ async function loadEvents() {
       try {
         const cnt = await sbFetch(`/photos?event_id=eq.${ev.id}&select=id`);
         photoCount = cnt.length;
-      } catch (_) {}
+      } catch (_) { }
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -93,7 +93,7 @@ async function loadEvents() {
     });
 
     loading.style.display = 'none';
-    table.style.display   = 'table';
+    table.style.display = 'table';
   } catch (err) {
     loading.textContent = `Error: ${err.message}`;
   }
@@ -122,7 +122,7 @@ document.getElementById('btn-cancel-event').addEventListener('click', () => {
 
 document.getElementById('btn-save-event').addEventListener('click', async () => {
   const title = document.getElementById('event-title').value.trim();
-  const date  = document.getElementById('event-date').value;
+  const date = document.getElementById('event-date').value;
   const cover = document.getElementById('event-cover').value.trim();
   const price = parseInt(document.getElementById('event-price').value, 10);
 
@@ -139,7 +139,7 @@ document.getElementById('btn-save-event').addEventListener('click', async () => 
     showToast('Event created!');
     document.getElementById('create-event-form').style.display = 'none';
     // Reset form
-    ['event-title','event-date','event-cover'].forEach(id => document.getElementById(id).value = '');
+    ['event-title', 'event-date', 'event-cover'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('event-price').value = '500';
     loadEvents();
   } catch (err) {
@@ -148,8 +148,8 @@ document.getElementById('btn-save-event').addEventListener('click', async () => 
 });
 
 // ─── Photo Upload ────────────────────────────────────────────────────────────
-const fileInput   = document.getElementById('file-input');
-const fileDrop    = document.getElementById('file-drop');
+const fileInput = document.getElementById('file-input');
+const fileDrop = document.getElementById('file-drop');
 const fileSelected = document.getElementById('file-selected');
 let selectedFile = null;
 

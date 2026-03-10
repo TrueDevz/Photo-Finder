@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.photofinder.photo_finder"
-        minSdk = 21
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

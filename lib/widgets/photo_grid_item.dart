@@ -36,29 +36,6 @@ class PhotoGridItem extends StatelessWidget {
                 ),
               ),
             ),
-
-            // ── Blur overlay if locked ───────────────────────────────────
-            if (!photo.isUnlocked)
-              _LockedOverlay(),
-
-            // ── Unlocked badge ───────────────────────────────────────────
-            if (photo.isUnlocked)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    size: 12,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -66,37 +43,6 @@ class PhotoGridItem extends StatelessWidget {
   }
 }
 
-class _LockedOverlay extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.1),
-            Colors.black.withOpacity(0.5),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.lock_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _ShimmerPlaceholder extends StatelessWidget {
   @override

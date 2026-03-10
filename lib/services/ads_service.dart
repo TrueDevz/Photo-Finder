@@ -46,18 +46,20 @@ class AdsService {
     }
 
     // ── SDK integration (uncomment when Start.io AAR is integrated) ──────────
-    // final completer = Completer<bool>();
-    // StartAppInterstitial().show(
-    //   onAdDisplayed: () {},
-    //   onAdClicked: () {},
-    //   onAdHidden: () {
-    //     _isAdReady = false;
-    //     _loadInterstitial();
-    //     completer.complete(true);
-    //   },
-    //   onFailedToShowAd: (_) => completer.complete(false),
-    // );
-    // return completer.future;
+    /*
+    final completer = Completer<bool>();
+    StartAppInterstitial().show(
+      onAdDisplayed: () {},
+      onAdClicked: () {},
+      onAdHidden: () {
+        _isAdReady = false;
+        _loadInterstitial();
+        completer.complete(true);
+      },
+      onFailedToShowAd: (_) => completer.complete(false),
+    );
+    return completer.future;
+    */
     // ─────────────────────────────────────────────────────────────────────────
 
     // Placeholder: simulate ad playback duration

@@ -1,0 +1,9 @@
+{
+  "name": "photo-finder-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for photo uploads",
+  "main": "index.js",
+  "dependencies": {
+    "fflate": "^0.8.2"
+  }
+}

@@ -1,15 +1,18 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
 import '../core/constants.dart';
 import '../models/event_model.dart';
 import '../models/photo_model.dart';
 import '../services/photo_service.dart';
+import '../services/ads_service.dart';
 import '../widgets/loading_indicator.dart';
 
-enum _ViewState { idle, unlocking, unlocked, alreadyViewed, failed }
+enum _ViewState { idle, loading, success, failed }
 
 class PhotoViewerScreen extends StatefulWidget {
   final PhotoModel photo;
@@ -44,10 +47,8 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen>
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
 
-    // Auto-start unlock if photo not yet unlocked
-    if (widget.photo.isUnlocked || widget.isSubscribed) {
-      _unlockPhoto();
-    }
+    // Start loading full image immediately for viewing
+    _loadFullImage();
   }
 
   @override
@@ -56,24 +57,23 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen>
     super.dispose();
   }
 
-  Future<void> _unlockPhoto() async {
-    setState(() => _state = _ViewState.unlocking);
+  Future<void> _loadFullImage() async {
+    setState(() => _state = _ViewState.loading);
 
-    final result = await PhotoService.instance.unlockPhoto(
-      widget.photo,
-      hasEventSubscription: widget.isSubscribed,
+    // Get signed URL for the full image
+    final url = await PhotoService.instance.getSignedUrl(
+      widget.photo.imageUrl,
+      widget.event.id,
     );
 
     if (!mounted) return;
 
-    if (result.success) {
+    if (url != null) {
       setState(() {
-        _state = _ViewState.unlocked;
-        _signedUrl = result.signedUrl;
+        _state = _ViewState.success;
+        _signedUrl = url;
       });
       _fadeCtrl.forward();
-    } else if (result.alreadyViewed) {
-      setState(() => _state = _ViewState.alreadyViewed);
     } else {
       setState(() => _state = _ViewState.failed);
     }
@@ -100,61 +100,131 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen>
   Widget _buildBody() {
     switch (_state) {
       case _ViewState.idle:
-        return _UnlockPrompt(onUnlock: _unlockPhoto);
+      case _ViewState.loading:
+        return const LoadingIndicator(message: 'Loading full quality photo...');
 
-      case _ViewState.unlocking:
-        return _UnlockingView(isSubscribed: widget.isSubscribed);
-
-      case _ViewState.unlocked:
-        return _UnlockedView(
+      case _ViewState.success:
+        return _SuccessView(
           signedUrl: _signedUrl ?? widget.photo.imageUrl,
           fadeAnimation: _fadeAnim,
-        );
-
-      case _ViewState.alreadyViewed:
-        return _AlreadyViewedView(
-          thumbnailUrl: widget.photo.thumbnailUrl,
-          onPurchase: () => context.push(AppRoutes.payment, extra: widget.event),
+          photoId: widget.photo.id,
+          isSubscribed: widget.isSubscribed,
         );
 
       case _ViewState.failed:
-        return _FailedView(onRetry: _unlockPhoto);
+        return _FailedView(onRetry: _loadFullImage);
     }
   }
 }
 
 // ─── Sub-views ────────────────────────────────────────────────────────────────
 
-class _UnlockPrompt extends StatelessWidget {
-  final VoidCallback onUnlock;
 
-  const _UnlockPrompt({required this.onUnlock});
+class _SuccessView extends StatefulWidget {
+  final String signedUrl;
+  final Animation<double> fadeAnimation;
+  final String photoId;
+  final bool isSubscribed;
+
+  const _SuccessView({
+    required this.signedUrl,
+    required this.fadeAnimation,
+    required this.photoId,
+    required this.isSubscribed,
+  });
+
+  @override
+  State<_SuccessView> createState() => _SuccessViewState();
+}
+
+class _SuccessViewState extends State<_SuccessView> {
+  bool _isSaving = false;
+
+  Future<void> _saveToGallery(BuildContext context) async {
+    setState(() => _isSaving = true);
+
+    try {
+      // 0. Show Ad for non-subscribers
+      if (!widget.isSubscribed) {
+        final adShown = await AdsService.instance.showInterstitial();
+        if (!adShown) {
+          // Handle ad failure if necessary, or just proceed
+        }
+      }
+
+      // 1. Check/Request permission
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        await Gal.requestAccess();
+      }
+
+      // 2. Download file to temp
+      final response = await http.get(Uri.parse(widget.signedUrl));
+      final tempDir = await getTemporaryDirectory();
+      final path = '${tempDir.path}/${widget.photoId}.jpg';
+      final file = File(path);
+      await file.writeAsBytes(response.bodyBytes);
+
+      // 3. Save to gallery
+      await Gal.putImage(path);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Saved to Gallery!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return FadeTransition(
+      opacity: widget.fadeAnimation,
+      child: Stack(
         children: [
-          const Icon(Icons.play_circle_fill_rounded,
-              size: 72, color: AppColors.primary),
-          const SizedBox(height: 16),
-          Text(AppStrings.unlockPhoto, style: AppTextStyles.heading3),
-          const SizedBox(height: 8),
-          Text(AppStrings.watchAd, style: AppTextStyles.bodySecondary),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: onUnlock,
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Watch Ad & Unlock'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+          InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4.0,
+            child: Center(
+              child: CachedNetworkImage(
+                imageUrl: widget.signedUrl,
+                fit: BoxFit.contain,
+                placeholder: (_, __) =>
+                    const LoadingIndicator(message: 'Loading full image...'),
+                errorWidget: (_, __, ___) => const Icon(
+                  Icons.broken_image_rounded,
+                  color: AppColors.textSecondary,
+                  size: 64,
+                ),
               ),
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            right: 20,
+            child: FloatingActionButton(
+              onPressed: _isSaving ? null : () => _saveToGallery(context),
+              backgroundColor: AppColors.primary,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_rounded, color: Colors.white),
             ),
           ),
         ],
@@ -163,117 +233,6 @@ class _UnlockPrompt extends StatelessWidget {
   }
 }
 
-class _UnlockingView extends StatelessWidget {
-  final bool isSubscribed;
-
-  const _UnlockingView({required this.isSubscribed});
-
-  @override
-  Widget build(BuildContext context) {
-    final msg = isSubscribed ? 'Loading your photo...' : AppStrings.adLoading;
-    return LoadingIndicator(message: msg);
-  }
-}
-
-class _UnlockedView extends StatelessWidget {
-  final String signedUrl;
-  final Animation<double> fadeAnimation;
-
-  const _UnlockedView({
-    required this.signedUrl,
-    required this.fadeAnimation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: fadeAnimation,
-      child: InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 4.0,
-        child: Center(
-          child: CachedNetworkImage(
-            imageUrl: signedUrl,
-            fit: BoxFit.contain,
-            placeholder: (_, __) =>
-                const LoadingIndicator(message: 'Loading full image...'),
-            errorWidget: (_, __, ___) => const Icon(
-              Icons.broken_image_rounded,
-              color: AppColors.textSecondary,
-              size: 64,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AlreadyViewedView extends StatelessWidget {
-  final String thumbnailUrl;
-  final VoidCallback onPurchase;
-
-  const _AlreadyViewedView({
-    required this.thumbnailUrl,
-    required this.onPurchase,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Blurred thumbnail
-        ImageFiltered(
-          imageFilter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: CachedNetworkImage(
-            imageUrl: thumbnailUrl,
-            fit: BoxFit.cover,
-          ),
-        ),
-        Container(color: Colors.black.withOpacity(0.6)),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.paddingL),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock_rounded,
-                    size: 64, color: AppColors.primary),
-                const SizedBox(height: 16),
-                Text('Already Viewed',
-                    style: AppTextStyles.heading2,
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                Text(
-                  AppStrings.alreadyViewed,
-                  style: AppTextStyles.bodySecondary,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton.icon(
-                  onPressed: onPurchase,
-                  icon: const Icon(Icons.lock_open_rounded),
-                  label: Text('Unlock Event – ₹500'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 28, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppDimensions.radiusM),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _FailedView extends StatelessWidget {
   final VoidCallback onRetry;

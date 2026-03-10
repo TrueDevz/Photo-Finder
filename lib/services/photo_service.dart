@@ -1,3 +1,4 @@
+import '../core/config.dart';
 import '../models/photo_model.dart';
 import '../utils/device_helper.dart';
 import 'supabase_service.dart';
@@ -48,7 +49,7 @@ class PhotoService {
 
     // ── Subscribed user: skip ad entirely ──────────────────────────────────
     if (hasEventSubscription) {
-      final signedUrl = await _getSignedUrl(photo);
+      final signedUrl = await getSignedUrl(photo.imageUrl, photo.eventId);
       return UnlockResult(success: true, signedUrl: signedUrl, skippedAd: true);
     }
 
@@ -69,14 +70,34 @@ class PhotoService {
 
     // ── Record view + return signed URL ───────────────────────────────────
     await _supabase.recordView(photo.id, deviceId);
-    final signedUrl = await _getSignedUrl(photo);
+    final signedUrl = await getSignedUrl(photo.imageUrl, photo.eventId);
     return UnlockResult(success: true, signedUrl: signedUrl);
   }
 
-  Future<String?> _getSignedUrl(PhotoModel photo) async {
-    final filename = photo.imageUrl.split('/').last.split('?').first;
-    final path = 'events/${photo.eventId}/full/$filename';
-    return _supabase.getSignedUrl(path);
+  Future<String?> getSignedUrl(String imageUrl, String eventId) async {
+    // If it's a full CDN URL (R2), return it directly for now.
+    // In production, you would call a Cloudflare Worker to get a signed R2 URL.
+    if (imageUrl.startsWith(AppConfig.cdnBaseUrl)) {
+      print('PhotoService.getSignedUrl: detected R2 URL, returning directly: $imageUrl');
+      return imageUrl;
+    }
+
+    // Fallback: If it's a relative path, try Supabase (vestige of original setup)
+    String path = imageUrl;
+    if (path.startsWith('/')) path = path.substring(1);
+    
+    // If it's just a filename, rebuild the path
+    if (!path.contains('/')) {
+      path = '$eventId/$path';
+    }
+
+    print('PhotoService.getSignedUrl: requesting signed URL from Supabase for path: $path');
+    try {
+      return await _supabase.getSignedUrl(path);
+    } catch (e) {
+      print('PhotoService.getSignedUrl: Supabase sign failed, returning original: $e');
+      return imageUrl;
+    }
   }
 }
 
