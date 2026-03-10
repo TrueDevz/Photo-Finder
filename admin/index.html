@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Photo Finder – Admin Panel</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">📸</span>
+      <span class="logo-text">Admin Panel</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-section="events">🗓 Events</a>
+      <a href="#" class="nav-item" data-section="upload">📤 Upload Photos</a>
+    </nav>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Events Section -->
+    <section id="section-events" class="section active">
+      <div class="section-header">
+        <h1>Events</h1>
+        <button class="btn btn-primary" id="btn-create-event">+ Create Event</button>
+      </div>
+
+      <!-- Create Event Form (hidden by default) -->
+      <div class="card" id="create-event-form" style="display:none;">
+        <h2>Create New Event</h2>
+        <div class="form-group">
+          <label>Event Title</label>
+          <input type="text" id="event-title" placeholder="e.g. Annual School Sports Day 2025" />
+        </div>
+        <div class="form-group">
+          <label>Event Date</label>
+          <input type="date" id="event-date" />
+        </div>
+        <div class="form-group">
+          <label>Cover Image URL</label>
+          <input type="url" id="event-cover" placeholder="https://cdn.yourdomain.com/..." />
+        </div>
+        <div class="form-group">
+          <label>Price (INR)</label>
+          <input type="number" id="event-price" value="500" min="0" />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="btn-save-event">Save Event</button>
+          <button class="btn btn-ghost" id="btn-cancel-event">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Events Table -->
+      <div class="card">
+        <div id="events-loading" class="loading-text">Loading events…</div>
+        <table class="table" id="events-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Date</th>
+              <th>Price</th>
+              <th>Photos</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="events-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Upload Photos Section -->
+    <section id="section-upload" class="section">
+      <div class="section-header">
+        <h1>Upload Photos</h1>
+      </div>
+
+      <div class="card">
+        <div class="form-group">
+          <label>Select Event</label>
+          <select id="upload-event-select">
+            <option value="">-- Select an event --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Upload ZIP File (WebP images inside)</label>
+          <div class="file-drop" id="file-drop">
+            <span class="drop-icon">📁</span>
+            <p>Drag &amp; drop a ZIP file here, or <label for="file-input" class="link">browse</label></p>
+            <input type="file" id="file-input" accept=".zip" style="display:none;" />
+          </div>
+          <div id="file-selected" class="file-selected" style="display:none;"></div>
+        </div>
+
+        <div class="progress-wrap" id="upload-progress-wrap" style="display:none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <span id="progress-label">0%</span>
+        </div>
+
+        <div id="upload-status" class="status-message" style="display:none;"></div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="btn-upload">Upload &amp; Process</button>
+        </div>
+
+        <div class="info-box">
+          <strong>Processing rules:</strong>
+          <ul>
+            <li>Full images are resized to 1280px wide, WebP, 75% quality (~200–300KB each)</li>
+            <li>Thumbnails are resized to 400px wide, WebP (~30–40KB each)</li>
+            <li>Both versions are uploaded to Cloudflare R2</li>
+            <li>URLs are saved to Supabase automatically</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
